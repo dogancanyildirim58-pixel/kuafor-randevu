@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 
-const API = "http://localhost:5000";
+const API = "https://kuafor-randevu.onrender.com";
 const ADMIN_PASSWORD = "12345";
 
 const barbers = ["Caner Usta", "Ahmet Usta", "Mehmet Usta"];
@@ -30,6 +30,7 @@ function App() {
   const [closedDays, setClosedDays] = useState([]);
   const [closedDateInput, setClosedDateInput] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const [workingHours, setWorkingHours] = useState({
     "Caner Usta": { start: "10:00", end: "19:00" },
@@ -53,8 +54,12 @@ function App() {
   }, []);
 
   const getAppointments = async () => {
-    const res = await axios.get(`${API}/appointments`);
-    setAppointments(res.data);
+    try {
+      const res = await axios.get(`${API}/appointments`);
+      setAppointments(res.data);
+    } catch (err) {
+      console.log(err);
+    }
   };
 
   const getBlockedHours = (appointment) => {
@@ -81,12 +86,12 @@ function App() {
 
   const addAppointment = async () => {
     if (!form.customerName || !form.phone || !form.service || !form.barberName || !form.date || !form.time) {
-      alert("Tüm alanları doldur");
+      alert("Lütfen tüm alanları doldurun");
       return;
     }
 
     if (isClosedDay(form.date)) {
-      alert("Bu gün kapalı");
+      alert("Bu gün kapalıdır");
       return;
     }
 
@@ -95,58 +100,75 @@ function App() {
       return;
     }
 
-    const res = await axios.post(`${API}/appointments`, form);
-    setAppointments(res.data.appointments);
+    try {
+      setLoading(true);
 
-    setSuccessMessage(
-      `${form.customerName} için ${form.date} ${form.time} randevusu oluşturuldu.`
-    );
+      const res = await axios.post(`${API}/appointments`, form);
+      setAppointments(res.data.appointments);
 
-    const message =
-      `Merhaba ${form.customerName}, randevunuz oluşturuldu.%0A%0A` +
-      `İşlem: ${form.service}%0A` +
-      `Kuaför: ${form.barberName}%0A` +
-      `Tarih: ${form.date}%0A` +
-      `Saat: ${form.time}%0A` +
-      `Fiyat: ${form.price}`;
+      setSuccessMessage(
+        `${form.customerName} için ${form.date} ${form.time} randevusu oluşturuldu.`
+      );
 
-    window.open(`https://wa.me/90${form.phone}?text=${message}`, "_blank");
+      const message =
+        `Merhaba ${form.customerName}, randevunuz oluşturuldu.%0A%0A` +
+        `İşlem: ${form.service}%0A` +
+        `Kuaför: ${form.barberName}%0A` +
+        `Tarih: ${form.date}%0A` +
+        `Saat: ${form.time}%0A` +
+        `Fiyat: ${form.price}`;
 
-    setForm({
-      customerName: "",
-      phone: "",
-      service: "",
-      price: "",
-      duration: 1,
-      barberName: "",
-      date: "",
-      time: "",
-    });
+      window.open(`https://wa.me/90${form.phone}?text=${message}`, "_blank");
+
+      setForm({
+        customerName: "",
+        phone: "",
+        service: "",
+        price: "",
+        duration: 1,
+        barberName: "",
+        date: "",
+        time: "",
+      });
+    } catch (err) {
+      console.log(err);
+      alert("Randevu oluşturulamadı. Backend/API bağlantısını kontrol et.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const deleteAppointment = async (id) => {
-    const res = await axios.delete(`${API}/appointments/${id}`);
-    setAppointments(res.data.appointments);
+    try {
+      const res = await axios.delete(`${API}/appointments/${id}`);
+      setAppointments(res.data.appointments);
+    } catch (err) {
+      alert("Silinemedi");
+    }
   };
 
   const changeTime = async (appointment) => {
     const newTime = prompt("Yeni saat gir. Örnek: 14:00", appointment.time);
     if (!newTime) return;
 
-    const res = await axios.put(`${API}/appointments/${appointment._id}`, {
-      time: newTime,
-    });
+    try {
+      const res = await axios.put(`${API}/appointments/${appointment._id}`, {
+        time: newTime,
+      });
 
-    setAppointments(res.data.appointments);
+      setAppointments(res.data.appointments);
 
-    const message =
-      `Merhaba ${appointment.customerName}, randevu saatiniz güncellendi.%0A%0A` +
-      `İşlem: ${appointment.service}%0A` +
-      `Kuaför: ${appointment.barberName}%0A` +
-      `Tarih: ${appointment.date}%0A` +
-      `Yeni Saat: ${newTime}`;
+      const message =
+        `Merhaba ${appointment.customerName}, randevu saatiniz güncellendi.%0A%0A` +
+        `İşlem: ${appointment.service}%0A` +
+        `Kuaför: ${appointment.barberName}%0A` +
+        `Tarih: ${appointment.date}%0A` +
+        `Yeni Saat: ${newTime}`;
 
-    window.open(`https://wa.me/90${appointment.phone}?text=${message}`, "_blank");
+      window.open(`https://wa.me/90${appointment.phone}?text=${message}`, "_blank");
+    } catch (err) {
+      alert("Saat değiştirilemedi");
+    }
   };
 
   const addClosedDay = () => {
@@ -427,8 +449,8 @@ function App() {
           </>
         )}
 
-        <button style={styles.goldButtonFull} onClick={addAppointment}>
-          Randevu Oluştur
+        <button style={styles.goldButtonFull} onClick={addAppointment} disabled={loading}>
+          {loading ? "Randevu Oluşturuluyor..." : "Randevu Oluştur"}
         </button>
 
         {successMessage && (
@@ -493,6 +515,7 @@ const styles = {
   sectionTitle: {
     color: "#d4af37",
     margin: "10px 0",
+    textAlign: "center",
   },
   hoursGrid: {
     display: "grid",
