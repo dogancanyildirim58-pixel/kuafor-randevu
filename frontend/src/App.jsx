@@ -85,7 +85,14 @@ function App() {
   };
 
   const addAppointment = async () => {
-    if (!form.customerName || !form.phone || !form.service || !form.barberName || !form.date || !form.time) {
+    if (
+      !form.customerName ||
+      !form.phone ||
+      !form.service ||
+      !form.barberName ||
+      !form.date ||
+      !form.time
+    ) {
       alert("Lütfen tüm alanları doldurun");
       return;
     }
@@ -118,8 +125,6 @@ function App() {
         `Saat: ${form.time}%0A` +
         `Fiyat: ${form.price}`;
 
-      window.open(`https://wa.me/90${form.phone}?text=${message}`, "_blank");
-
       setForm({
         customerName: "",
         phone: "",
@@ -130,6 +135,10 @@ function App() {
         date: "",
         time: "",
       });
+
+      setTimeout(() => {
+        window.open(`https://wa.me/90${form.phone}?text=${message}`, "_blank");
+      }, 500);
     } catch (err) {
       console.log(err);
       alert("Randevu oluşturulamadı. Backend/API bağlantısını kontrol et.");
@@ -165,7 +174,9 @@ function App() {
         `Tarih: ${appointment.date}%0A` +
         `Yeni Saat: ${newTime}`;
 
-      window.open(`https://wa.me/90${appointment.phone}?text=${message}`, "_blank");
+      setTimeout(() => {
+        window.open(`https://wa.me/90${appointment.phone}?text=${message}`, "_blank");
+      }, 500);
     } catch (err) {
       alert("Saat değiştirilemedi");
     }
