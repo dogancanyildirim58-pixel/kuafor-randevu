@@ -8,100 +8,73 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-mongoose
-  .connect(process.env.MONGO_URI)
-  .then(() => {
-    console.log("MongoDB bağlandı");
-  })
-  .catch((err) => {
-    console.log("MongoDB hata:", err);
-  });
+mongoose.connect(process.env.MONGO_URI)
+  .then(() => console.log("MongoDB bağlandı"))
+  .catch((err) => console.log("MongoDB hata:", err));
 
-const RandevuSchema = new mongoose.Schema({
-  adSoyad: String,
-  telefon: String,
-  hizmet: String,
-  personel: String,
-  tarih: String,
-  saat: String,
-  createdAt: {
-    type: Date,
-    default: Date.now,
-  },
-});
+const AppointmentSchema = new mongoose.Schema({
+  customerName: String,
+  phone: String,
+  service: String,
+  price: String,
+  duration: Number,
+  barberName: String,
+  date: String,
+  time: String,
+}, { timestamps: true });
 
-const Randevu = mongoose.model("Randevu", RandevuSchema);
+const Appointment = mongoose.model("Appointment", AppointmentSchema);
 
 app.get("/", (req, res) => {
   res.send("Kuaför API çalışıyor");
 });
 
-app.post("/randevu", async (req, res) => {
+app.get("/appointments", async (req, res) => {
   try {
-    const {
-      adSoyad,
-      telefon,
-      hizmet,
-      personel,
-      tarih,
-      saat,
-    } = req.body;
-
-    if (
-      !adSoyad ||
-      !telefon ||
-      !hizmet ||
-      !personel ||
-      !tarih ||
-      !saat
-    ) {
-      return res.status(400).json({
-        success: false,
-        message: "Eksik alan var",
-      });
-    }
-
-    const yeniRandevu = new Randevu({
-      adSoyad,
-      telefon,
-      hizmet,
-      personel,
-      tarih,
-      saat,
-    });
-
-    await yeniRandevu.save();
-
-    res.json({
-      success: true,
-      message: "Randevu oluşturuldu",
-    });
-  } catch (error) {
-    console.log(error);
-
-    res.status(500).json({
-      success: false,
-      message: "Sunucu hatası",
-    });
+    const appointments = await Appointment.find().sort({ createdAt: -1 });
+    res.json(appointments);
+  } catch (err) {
+    res.status(500).json({ message: "Randevular alınamadı" });
   }
 });
 
-app.get("/randevular", async (req, res) => {
+app.post("/appointments", async (req, res) => {
   try {
-    const randevular = await Randevu.find().sort({
-      createdAt: -1,
-    });
+    const appointment = await Appointment.create(req.body);
+    const appointments = await Appointment.find().sort({ createdAt: -1 });
 
-    res.json(randevular);
-  } catch (error) {
-    res.status(500).json({
-      success: false,
+    res.json({
+      message: "Randevu oluşturuldu",
+      appointment,
+      appointments,
     });
+  } catch (err) {
+    res.status(500).json({ message: "Randevu oluşturulamadı" });
+  }
+});
+
+app.put("/appointments/:id", async (req, res) => {
+  try {
+    await Appointment.findByIdAndUpdate(req.params.id, req.body);
+    const appointments = await Appointment.find().sort({ createdAt: -1 });
+    res.json({ appointments });
+  } catch (err) {
+    res.status(500).json({ message: "Güncellenemedi" });
+  }
+});
+
+app.delete("/appointments/:id", async (req, res) => {
+  try {
+    await Appointment.findByIdAndDelete(req.params.id);
+    const appointments = await Appointment.find().sort({ createdAt: -1 });
+    res.json({ appointments });
+  } catch (err) {
+    res.status(500).json({ message: "Silinemedi" });
   }
 });
 
 const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
-  console.log("Server çalışıyor:", PORT);
+  console.log(`Server çalışıyor: ${PORT}`);
 });
