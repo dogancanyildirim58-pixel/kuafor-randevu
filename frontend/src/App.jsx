@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 
-const API = "https://kuafor-randevu.onrender.com";
+const API = "https://kuafor-randevu-backend.onrender.com";
 const ADMIN_PASSWORD = "12345";
 
 const barbers = ["Caner Usta", "Ahmet Usta", "Mehmet Usta"];
